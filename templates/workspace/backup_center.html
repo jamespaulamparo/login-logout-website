@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Backup & restore{% endblock %}
+{% block breadcrumb %}BACKUP & RESTORE{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">DATABASE UTILITIES</div><h1>Backup & restore</h1><p class="muted">Create a database snapshot or restore the workspace from a previous SQLite backup.</p></div></div>
+<div class="notice"><strong>Before restoring</strong><p>Restoration replaces the current database, including accounts and records. Download a fresh backup first. You will be signed out after a successful restore.</p></div>
+<section class="utility-grid backup-grid">
+  <article class="utility-card"><span class="utility-icon">◫</span><h2>Create a backup</h2><p>Generate a consistent SQLite database snapshot and save it in the local backups folder.</p><form method="post" action="{% url 'create_backup' %}">{% csrf_token %}<button class="button primary" type="submit">Create database backup</button></form></article>
+  <article class="utility-card"><span class="utility-icon">↻</span><h2>Restore a backup</h2><p>Upload a valid SQLite backup file created by this project or another compatible copy.</p><form method="post" action="{% url 'restore_backup' %}" enctype="multipart/form-data" class="form-stack"><label>Backup file<input type="file" name="backup_file" accept=".sqlite3,.sqlite,.db" required></label><button class="button danger" type="submit" onclick="return confirm('This will replace the current database. Continue?')">Restore database</button></form></article>
+</section>
+<div class="section-heading"><div><div class="eyebrow">BACKUP LOG</div><h2>Recent operations</h2></div></div>
+<section class="panel">
+  {% if logs %}<div class="record-list">{% for log in logs %}<div class="record-row"><span class="record-icon">{% if log.action == 'created' %}◫{% else %}↻{% endif %}</span><span class="record-info"><strong>{{ log.filename }}</strong><small>{{ log.get_action_display }} · {{ log.created_at|date:"M d, Y · h:i A" }} · {{ log.file_size|filesizeformat }}</small></span>{% if log.action == 'created' %}<a class="text-link" href="{% url 'download_backup' log.pk %}">Download ↓</a>{% endif %}</div>{% endfor %}</div>{% else %}<div class="empty-state compact"><strong>No backup activity yet</strong><p>Your backup and restore operations will be recorded here.</p></div>{% endif %}
+</section>
+{% endblock %}

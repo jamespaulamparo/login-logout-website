@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Records{% endblock %}
+{% block breadcrumb %}RECORDS{% endblock %}
+{% block content %}
+<div class="page-heading"><div><div class="eyebrow">WORKSPACE DATA</div><h1>Records</h1><p class="muted">A generic starting point for the information your hackathon project will manage.</p></div><a class="button primary" href="{% url 'entry_create' %}">＋ New record</a></div>
+<section class="panel">
+  {% if entries %}<div class="record-list">{% for entry in entries %}<div class="record-row"><span class="record-icon">▤</span><span class="record-info"><strong>{{ entry.title }}</strong><small>{{ entry.category|default:"Uncategorized" }} · {{ entry.updated_at|date:"M d, Y · h:i A" }}</small></span><span class="record-actions"><a href="{% url 'entry_edit' entry.pk %}">Edit</a><form method="post" action="{% url 'entry_delete' entry.pk %}" onsubmit="return confirm('Delete this record?')">{% csrf_token %}<button type="submit">Delete</button></form></span></div>{% endfor %}</div>{% else %}<div class="empty-state"><span class="empty-icon">▤</span><strong>No records found</strong><p>Records you create will appear here.</p><a class="button secondary" href="{% url 'entry_create' %}">Create a record</a></div>{% endif %}
+</section>
+{% endblock %}

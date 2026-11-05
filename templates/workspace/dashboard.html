@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block breadcrumb %}OVERVIEW{% endblock %}
+{% block content %}
+<div class="page-heading">
+  <div><div class="eyebrow">OVERVIEW</div><h1>Good to have you back, {{ user.username }}.</h1><p class="muted">Your project workspace is ready. Start with a record or manage your database.</p></div>
+  <a class="button primary" href="{% url 'entry_create' %}">＋ New record</a>
+</div>
+<section class="stat-grid">
+  <article class="stat-card"><span class="stat-label">YOUR RECORDS</span><strong>{{ entry_count }}</strong><small>Workspace entries</small></article>
+  <article class="stat-card"><span class="stat-label">BACKUPS CREATED</span><strong>{{ backup_count }}</strong><small>By your account</small></article>
+  <article class="stat-card"><span class="stat-label">ACCOUNT STATUS</span><strong class="status-text">Active</strong><small>Authenticated session</small></article>
+</section>
+<div class="section-heading"><div><div class="eyebrow">RECENT ACTIVITY</div><h2>Recent records</h2></div><a class="text-link" href="{% url 'entry_list' %}">View all →</a></div>
+<section class="panel">
+  {% if recent_entries %}
+    <div class="record-list">{% for entry in recent_entries %}<a class="record-row" href="{% url 'entry_edit' entry.pk %}"><span class="record-icon">▤</span><span class="record-info"><strong>{{ entry.title }}</strong><small>{{ entry.category|default:"Uncategorized" }} · Updated {{ entry.updated_at|date:"M d, Y" }}</small></span><span class="row-arrow">↗</span></a>{% endfor %}</div>
+  {% else %}
+    <div class="empty-state"><span class="empty-icon">▤</span><strong>No records yet</strong><p>Create a record to start shaping this workspace around your hackathon project.</p><a class="button secondary" href="{% url 'entry_create' %}">Create your first record</a></div>
+  {% endif %}
+</section>
+<div class="section-heading"><div><div class="eyebrow">SYSTEM UTILITIES</div><h2>Database tools</h2></div></div>
+<section class="utility-grid">
+  <article class="utility-card"><span class="utility-icon">◫</span><h3>Backup database</h3><p>Create a downloadable SQLite snapshot of the current project database.</p><a class="text-link" href="{% url 'backup_center' %}">Open backup center →</a></article>
+  <article class="utility-card"><span class="utility-icon">↻</span><h3>Restore database</h3><p>Recover the database from a previously exported, validated backup file.</p><a class="text-link" href="{% url 'backup_center' %}">Manage backups →</a></article>
+</section>
+{% endblock %}

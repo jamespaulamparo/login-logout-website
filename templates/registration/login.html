@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block auth_content %}
+<main class="auth-page">
+  <section class="auth-aside">
+    <a class="brand brand-light" href="#"><span class="brand-mark">F</span><span><strong>Foundry</strong><small>HACKATHON STARTER</small></span></a>
+    <div class="auth-message">
+      <div class="eyebrow light-eyebrow">YOUR PROJECT STARTS HERE</div>
+      <h1>A solid foundation<br>for what comes next.</h1>
+      <p>A clean, adaptable workspace with authentication and database utilities, ready to become something bigger.</p>
+    </div>
+    <div class="auth-aside-foot">DJANGO · PYTHON · BUILT TO ADAPT</div>
+  </section>
+  <section class="auth-main">
+    <div class="login-card">
+      <div class="eyebrow">WORKSPACE ACCESS</div>
+      <h2>Welcome back.</h2>
+      <p class="muted">Sign in to continue to your workspace.</p>
+      <form method="post" class="form-stack">
+        {% csrf_token %}
+        {% if form.errors %}<div class="form-error">Your username or password was incorrect. Please try again.</div>{% endif %}
+        <label>Username<input type="text" name="username" autocomplete="username" required autofocus placeholder="Enter your username"></label>
+        <label>Password<input type="password" name="password" autocomplete="current-password" required placeholder="Enter your password"></label>
+        <input type="hidden" name="next" value="{{ next }}">
+        <button class="button primary full" type="submit">Sign in <span>→</span></button>
+      </form>
+      <div class="auth-note">Accounts are managed through the Django admin.</div>
+    </div>
+  </section>
+</main>
+{% endblock %}
