@@ -224,3 +224,37 @@ class ModelAndAdminTests(TestCase):
     def test_admin_registration(self):
         self.assertIn(Entry, site._registry)
         self.assertIn(BackupLog, site._registry)
+
+
+class NotificationTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="notifier", password="StrongPass123!")
+
+    def test_notify_new_entry_sends_email_on_create(self):
+        from django.core import mail
+        self.client.login(username="notifier", password="StrongPass123!")
+        response = self.client.post(reverse("entry_create"), {
+            "title": "Incident #404",
+            "category": "Operations",
+            "description": "Urgent review required."
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(len(mail.outbox), 1)
+        sent = mail.outbox[0]
+        self.assertIn("[Foundry Alert] New record created: Incident #404", sent.subject)
+        self.assertIn("habervincent21@gmail.com", sent.to)
+        self.assertIn("Incident #404", sent.body)
+        self.assertIn("http://127.0.0.1:8000/entries/", sent.body)
+
+    def test_send_admin_alert_without_recipients(self):
+        from .notifications import send_admin_alert
+        with override_settings(ADMIN_EMAIL=""):
+            result = send_admin_alert("Test Subject", "Test Body")
+            self.assertFalse(result)
+
+    def test_send_admin_alert_handles_exception_safely(self):
+        from unittest.mock import patch
+        from .notifications import send_admin_alert
+        with patch("django.core.mail.EmailMultiAlternatives.send", side_effect=Exception("SMTP simulated error")):
+            result = send_admin_alert("Test", "Body")
+            self.assertFalse(result)

@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -80,3 +81,23 @@ LOGOUT_REDIRECT_URL = "login"
 SESSION_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = "DENY"
+
+# Email Configuration (Gmail SMTP)
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = os.environ.get("MAIL_SERVER", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("MAIL_PORT", "587"))
+EMAIL_USE_TLS = os.environ.get("MAIL_USE_TLS", "True").lower() == "true"
+EMAIL_HOST_USER = os.environ.get("MAIL_USERNAME", "")
+EMAIL_HOST_PASSWORD = os.environ.get("MAIL_PASSWORD", "").replace(" ", "")
+EMAIL_TIMEOUT = int(os.environ.get("MAIL_TIMEOUT", "20"))
+DEFAULT_FROM_EMAIL = os.environ.get(
+    "MAIL_DEFAULT_SENDER",
+    f"Foundry <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "Foundry <no-reply@example.com>",
+)
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "")
+DAILY_REPORT_EMAIL = os.environ.get("DAILY_REPORT_EMAIL", ADMIN_EMAIL)
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+
+# Tests must never open a real SMTP connection
+if "test" in sys.argv:
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"

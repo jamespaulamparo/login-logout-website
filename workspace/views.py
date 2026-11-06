@@ -17,6 +17,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import EntryForm
 from .models import BackupLog, Entry
+from .notifications import notify_new_entry
 
 
 class CustomLoginView(LoginView):
@@ -49,6 +50,7 @@ def entry_create(request):
         entry = form.save(commit=False)
         entry.created_by = request.user
         entry.save()
+        notify_new_entry(entry)
         messages.success(request, "Record created.")
         return redirect("entry_list")
     return render(request, "workspace/entry_form.html", {"form": form, "page_title": "New record"})
