@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Create an Account{% endblock %}
+{% block auth_content %}
+<main class="auth-page">
+  <section class="auth-aside">
+    <a class="brand brand-light" href="{% url 'login' %}"><span class="brand-mark">F</span><span><strong>Foundry</strong><small>HACKATHON STARTER</small></span></a>
+    <div class="auth-message">
+      <div class="eyebrow light-eyebrow">JOIN THE WORKSPACE</div>
+      <h1>Secure registration<br>with email verification.</h1>
+      <p>Enter your details and we will email you a 6-digit one-time verification code to activate your account.</p>
+    </div>
+    <div class="auth-aside-foot">FAST · SECURE · VERIFIED SIGNUP</div>
+  </section>
+  <section class="auth-main">
+    <div class="login-card">
+      <div class="eyebrow">STEP 1 OF 2 · ACCOUNT DETAILS</div>
+      <h2>Create your account.</h2>
+      <p class="muted">We will send a one-time passcode to your email.</p>
+      
+      <form method="post" class="form-stack">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="form-error">{{ form.non_field_errors|join:", " }}</div>
+        {% endif %}
+        
+        <label>
+          Username
+          {{ form.username }}
+          {% if form.username.errors %}<span class="field-error">{{ form.username.errors|join:", " }}</span>{% endif %}
+        </label>
+        
+        <label>
+          Email address
+          {{ form.email }}
+          {% if form.email.errors %}<span class="field-error">{{ form.email.errors|join:", " }}</span>{% endif %}
+        </label>
+        
+        <label>
+          Password
+          {{ form.password }}
+          {% if form.password.errors %}<span class="field-error">{{ form.password.errors|join:", " }}</span>{% endif %}
+        </label>
+        
+        <label>
+          Confirm password
+          {{ form.confirm_password }}
+          {% if form.confirm_password.errors %}<span class="field-error">{{ form.confirm_password.errors|join:", " }}</span>{% endif %}
+        </label>
+        
+        <button class="button primary full" type="submit">Send Verification Code <span>→</span></button>
+      </form>
+      
+      <div class="auth-note">Already have an account? <a href="{% url 'login' %}" class="auth-link"><strong>Sign in</strong></a></div>
+    </div>
+  </section>
+</main>
+{% endblock %}

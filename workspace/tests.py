@@ -2,6 +2,7 @@ import io
 import os
 import sqlite3
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 
 from django.contrib.admin.sites import site
@@ -9,9 +10,10 @@ from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from .forms import EntryForm
-from .models import BackupLog, Entry
+from .models import BackupLog, EmailVerificationOTP, Entry
 
 User = get_user_model()
 
@@ -224,6 +226,7 @@ class ModelAndAdminTests(TestCase):
     def test_admin_registration(self):
         self.assertIn(Entry, site._registry)
         self.assertIn(BackupLog, site._registry)
+        self.assertIn(EmailVerificationOTP, site._registry)
 
 
 class NotificationTests(TestCase):
@@ -258,3 +261,120 @@ class NotificationTests(TestCase):
         with patch("django.core.mail.EmailMultiAlternatives.send", side_effect=Exception("SMTP simulated error")):
             result = send_admin_alert("Test", "Body")
             self.assertFalse(result)
+
+
+class RegistrationWorkflowTests(TestCase):
+    def test_register_page_loads(self):
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Create your account")
+
+    def test_register_authenticated_user_redirects(self):
+        user = User.objects.create_user(username="alreadyuser", password="Password123!")
+        self.client.login(username="alreadyuser", password="Password123!")
+        response = self.client.get(reverse("register"))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("dashboard"))
+
+    def test_register_flow_generates_otp_and_verifies_successfully(self):
+        from django.core import mail
+        # Step 1: Submit valid registration form
+        response = self.client.post(reverse("register"), {
+            "username": "newjoiner",
+            "email": "newjoiner@example.org",
+            "password": "ComplexPassword99!",
+            "confirm_password": "ComplexPassword99!",
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("register_verify"))
+
+        # Verify email was dispatched with 6-digit OTP
+        self.assertEqual(len(mail.outbox), 1)
+        sent_email = mail.outbox[0]
+        self.assertEqual(sent_email.to, ["newjoiner@example.org"])
+        self.assertIn("Foundry — Your Verification Code", sent_email.subject)
+
+        # Inspect OTP in database
+        otp_entry = EmailVerificationOTP.objects.filter(email="newjoiner@example.org", is_used=False).first()
+        self.assertIsNotNone(otp_entry)
+        self.assertEqual(len(otp_entry.otp_code), 6)
+
+        # Step 2: Try invalid OTP first
+        bad_response = self.client.post(reverse("register_verify"), {
+            "otp_code": "000000"
+        })
+        self.assertEqual(bad_response.status_code, 200)
+        self.assertContains(bad_response, "Invalid verification code")
+
+        # Step 3: Enter correct OTP code
+        good_response = self.client.post(reverse("register_verify"), {
+            "otp_code": otp_entry.otp_code
+        })
+        self.assertEqual(good_response.status_code, 302)
+        self.assertRedirects(good_response, reverse("dashboard"))
+
+        # Verify user was created and session is active
+        user = User.objects.get(username="newjoiner")
+        self.assertEqual(user.email, "newjoiner@example.org")
+        self.assertTrue(user.check_password("ComplexPassword99!"))
+        otp_entry.refresh_from_db()
+        self.assertTrue(otp_entry.is_used)
+
+    def test_register_duplicate_username_and_email_rejected(self):
+        User.objects.create_user(username="existingguy", email="existing@test.com", password="Pass1234Password!")
+        response = self.client.post(reverse("register"), {
+            "username": "existingguy",
+            "email": "different@test.com",
+            "password": "Pass1234Password!",
+            "confirm_password": "Pass1234Password!",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "username", "This username is already taken. Please choose another.")
+
+        response2 = self.client.post(reverse("register"), {
+            "username": "uniqueguy",
+            "email": "existing@test.com",
+            "password": "Pass1234Password!",
+            "confirm_password": "Pass1234Password!",
+        })
+        self.assertEqual(response2.status_code, 200)
+        self.assertFormError(response2.context["form"], "email", "An account with this email address already exists. Please sign in instead.")
+
+    def test_register_password_mismatch(self):
+        response = self.client.post(reverse("register"), {
+            "username": "someone",
+            "email": "someone@test.com",
+            "password": "Password1!",
+            "confirm_password": "DifferentPassword1!",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context["form"], "confirm_password", "Passwords do not match.")
+
+    def test_verify_without_session_redirects_to_register(self):
+        response = self.client.get(reverse("register_verify"))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("register"))
+
+    def test_resend_otp_rate_limiting(self):
+        # Set up pending session
+        session = self.client.session
+        session["pending_reg"] = {
+            "username": "speedy",
+            "email": "speedy@test.com",
+            "password": "hashed_pass_placeholder",
+        }
+        session.save()
+
+        # First send
+        EmailVerificationOTP.objects.create(
+            email="speedy@test.com",
+            otp_code="111111",
+            expires_at=timezone.now() + timedelta(minutes=10)
+        )
+
+        # Immediate resend should be rate-limited
+        res = self.client.post(reverse("register_resend_otp"))
+        self.assertEqual(res.status_code, 302)
+        # Verify message about waiting 30 seconds
+        res2 = self.client.get(reverse("register_verify"))
+        self.assertContains(res2, "Please wait at least 30 seconds before requesting another code.")

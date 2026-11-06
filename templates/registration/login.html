@@ -3,7 +3,7 @@
 {% block auth_content %}
 <main class="auth-page">
   <section class="auth-aside">
-    <a class="brand brand-light" href="#"><span class="brand-mark">F</span><span><strong>Foundry</strong><small>HACKATHON STARTER</small></span></a>
+    <a class="brand brand-light" href="{% url 'login' %}"><span class="brand-mark">F</span><span><strong>Foundry</strong><small>HACKATHON STARTER</small></span></a>
     <div class="auth-message">
       <div class="eyebrow light-eyebrow">YOUR PROJECT STARTS HERE</div>
       <h1>A solid foundation<br>for what comes next.</h1>
@@ -24,7 +24,7 @@
         <input type="hidden" name="next" value="{{ next }}">
         <button class="button primary full" type="submit">Sign in <span>→</span></button>
       </form>
-      <div class="auth-note">Accounts are managed through the Django admin.</div>
+      <div class="auth-note">Don't have an account yet? <a href="{% url 'register' %}" class="auth-link"><strong>Create an account</strong></a></div>
     </div>
   </section>
 </main>

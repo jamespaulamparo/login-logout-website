@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Verify Email{% endblock %}
+{% block auth_content %}
+<main class="auth-page">
+  <section class="auth-aside">
+    <a class="brand brand-light" href="{% url 'login' %}"><span class="brand-mark">F</span><span><strong>Foundry</strong><small>HACKATHON STARTER</small></span></a>
+    <div class="auth-message">
+      <div class="eyebrow light-eyebrow">STEP 2 OF 2 · EMAIL VERIFICATION</div>
+      <h1>Almost there.<br>Confirm it's you.</h1>
+      <p>We sent a 6-digit OTP code to <strong>{{ email }}</strong>. Enter it to activate your new workspace account.</p>
+    </div>
+    <div class="auth-aside-foot">ONE-TIME CODE · EXPIRES IN 10 MINUTES</div>
+  </section>
+  <section class="auth-main">
+    <div class="login-card">
+      <div class="eyebrow">SECURITY VERIFICATION</div>
+      <h2>Enter OTP code.</h2>
+      <p class="muted">A 6-digit code was sent to <strong>{{ email }}</strong>.</p>
+      
+      <form method="post" class="form-stack">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="form-error">{{ form.non_field_errors|join:", " }}</div>
+        {% endif %}
+        
+        <label>
+          One-Time Passcode (6 digits)
+          {{ form.otp_code }}
+          {% if form.otp_code.errors %}<span class="field-error">{{ form.otp_code.errors|join:", " }}</span>{% endif %}
+        </label>
+        
+        <button class="button primary full" type="submit">Verify & Activate Account <span>→</span></button>
+      </form>
+      
+      <div class="otp-actions">
+        <form method="post" action="{% url 'register_resend_otp' %}" class="resend-form">
+          {% csrf_token %}
+          <span class="muted-note">Didn't get the code?</span>
+          <button type="submit" class="resend-btn">Resend code</button>
+        </form>
+        <div class="auth-note">Entered the wrong email? <a href="{% url 'register' %}" class="auth-link"><strong>Start over</strong></a></div>
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

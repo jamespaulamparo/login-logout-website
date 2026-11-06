@@ -113,3 +113,63 @@ def notify_new_entry(entry):
 """
 
     return send_admin_alert(subject, text_body, html_body)
+
+
+def send_registration_otp(email, otp_code):
+    """
+    Sends a 6-digit verification OTP code to the registering user's email address.
+    """
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "Foundry <no-reply@example.com>")
+    subject = f"Foundry — Your Verification Code is {otp_code}"
+
+    text_body = (
+        f"Welcome to Foundry.\n\n"
+        f"Your verification code is: {otp_code}\n\n"
+        f"This code will expire in 10 minutes.\n"
+        f"If you did not request this registration, you can safely ignore this email.\n"
+    )
+
+    html_body = f"""<!doctype html>
+<html>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f5f6f8; padding: 24px; color: #202631; margin: 0;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 520px; margin: 0 auto; background: #ffffff; border-radius: 10px; border: 1px solid #e8ebef; padding: 32px;">
+    <tr>
+      <td align="center">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; color: #5268a9; margin-bottom: 8px;">EMAIL VERIFICATION</div>
+        <h2 style="margin: 0 0 12px; font-size: 22px; color: #202631;">Confirm your email</h2>
+        <p style="color: #596273; font-size: 14px; line-height: 1.6; margin: 0 0 24px;">Please use the following 6-digit code to complete your registration on Foundry.</p>
+        
+        <div style="background: #edf0f9; border: 1px solid #d5ddf2; border-radius: 8px; padding: 18px 24px; display: inline-block; margin-bottom: 24px;">
+          <span style="font-family: 'Courier New', Courier, monospace; font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #40558f;">{otp_code}</span>
+        </div>
+        
+        <p style="color: #7b8492; font-size: 12px; line-height: 1.5; margin: 0 0 8px;">This code is valid for <strong>10 minutes</strong>.</p>
+        <p style="color: #9aa2ad; font-size: 11px; line-height: 1.5; margin: 0;">If you did not create an account, no further action is required.</p>
+        
+        <p style="font-size: 11px; color: #9aa2ad; margin-top: 32px; border-top: 1px solid #e8ebef; padding-top: 16px;">
+          Foundry Django Hackathon Platform
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+"""
+
+    try:
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_body,
+            from_email=from_email,
+            to=[email],
+            headers={
+                "Date": formatdate(timezone.now().timestamp(), localtime=True),
+            },
+        )
+        msg.attach_alternative(html_body, "text/html")
+        msg.send(fail_silently=False)
+        logger.info("Verification OTP sent to %s", email)
+        return True
+    except Exception as exc:
+        logger.error("Failed to send OTP to %s: %s", email, exc)
+        return False
